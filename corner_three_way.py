@@ -18,18 +18,17 @@ import numpy as np
 # = GEOMETRY =
 # ============
 
+
 shell_thickness = 6
 e_thickness = 20
 tolerance = .3
 gap_size = 3 - tolerance
 inner_corner = e_thickness/2 + tolerance;
-outer_corner = inner_corner + shell_thickness
 nub_length = 6 - tolerance
 
 def e_profile() -> List[Point3]:
 	profile_pts = [[inner_corner,inner_corner,0],[inner_corner,gap_size,0],[inner_corner - nub_length, gap_size,0],
 					[inner_corner - nub_length,0,0],[0,0,0]]
-
 	return profile_pts
 
 def extrude_and_mirror_profile(e_profile,length,scale) -> OpenSCADObject:
@@ -46,11 +45,6 @@ def make_three_e(extrusion_profile) -> OpenSCADObject:
 	three_extrusions += translate([10+shell_thickness,0,0])(rotate(a=90, v=FORWARD_VEC)(extrusion_profile))
 	three_extrusions += translate(([0,50,0]))(rotate(a=90, v=RIGHT_VEC)(extrusion_profile))
 	return three_extrusions
-
-def bisect_floor(input) -> OpenSCADObject:
-	size = 300
-	floor = translate([0,0,-150])(cube([300,300,300],center = True))
-	return input - floor
 
 def hammer_nut_hole() -> OpenSCADObject:
 	inset_length = 12
@@ -145,29 +139,6 @@ def cutouts(ends = [1,1,1,1,1,1,1,1],length = 100) -> OpenSCADObject:
 	cutouts = rotate(90,v=UP_VEC)(cutouts)
 	return cutouts
 
-def shell_pos(first_pt = np.array([10,10,10]),second_pt = np.array([100,100,100])) -> OpenSCADObject:
-	if type(first_pt) == list:
-		first_pt = np.array(first_pt)
-	if type(second_pt) == list:
-		second_pt = np.array(second_pt)
-	norm_v = second_pt - first_pt
-	length = np.linalg.norm(norm_v)
-	total = (e_thickness/2 + shell_thickness)*2
-	cube_shell = (cube([total, total, length], center=True))
-	cube_shell = translate([0,0,length/2])(cube_shell)
-	x = norm_v[0]
-	y = norm_v[1]
-	z = norm_v[2]
-	b = np.degrees(np.arccos(z/length))
-	c = np.degrees(np.arctan2(y,x))
-	cube_shell = rotate([0,b,c])(cube_shell)
-
-	x = first_pt[0]
-	y = first_pt[1]
-	z = first_pt[2]
-	cube_shell = translate([x,y,z])(cube_shell)
-	return cube_shell
-
 def cutout_pos(first_pt = np.array([10,10,10]),second_pt = np.array([100,100,100]),ends = [1,1,1,1,1,1,1,1]) -> OpenSCADObject:
 	offset = 10
 	if type(first_pt) == list:
@@ -190,6 +161,81 @@ def cutout_pos(first_pt = np.array([10,10,10]),second_pt = np.array([100,100,100
 	y = first_pt[1]
 	z = first_pt[2]
 	cube_shell = translate([x,y,z])(cube_shell)
+
+	return cube_shell
+
+class Shell:
+	def __init__(self,start_pt,end_pt):
+		self.start_pt = start_pt
+		self.end_pt = end_pt
+
+	def make_shell(self,length) -> OpenSCADObject:
+		total = (e_thickness/2 + shell_thickness)*2
+		return cube([total, total, length], center=True)
+
+	def shell_pos(self) -> OpenSCADObject:
+		cube_shell = reposition(self.start_pt,self.end_pt,self.make_shell)
+		return cube_shell
+class Gusset:
+	def __init__(self,thickness):
+		self.thickness = thickness
+
+	def gusset_shell(self,length) -> OpenSCADObject:
+		total = self.thickness
+		return cube([total, total, length], center=True)
+
+	def gusset(self,points) -> OpenSCADObject:
+		first_pt = np.array(points[0][0])
+		second_pt = np.array(points[1][0])
+		# first_cube_shell = reposition(first_pt,second_pt,gusset_shell)
+
+		third_pt = np.array(points[0][1])
+		fourth_pt = np.array(points[1][1])
+		# second_cube_shell = reposition(third_pt,fourth_pt,gusset_shell)
+
+		# all_cubes = first_cube_shell + second_cube_shell
+		all_cubes = OpenSCADObject(name="all_cubes",params={})
+
+		length = 12
+		for i in range(1,length):
+			pt_x = (i/length) * first_pt[0] + (length - i)/length * third_pt[0]
+			pt_y = (i/length) * first_pt[1] + (length - i)/length * third_pt[1]
+			pt_z = (i/length) * first_pt[2] + (length - i)/length * third_pt[2]
+			fifth_pt = np.array([pt_x,pt_y,pt_z])
+			pt_x = (i/length) * second_pt[0] + (length - i)/length * fourth_pt[0]
+			pt_y = (i/length) * second_pt[1] + (length - i)/length * fourth_pt[1]
+			pt_z = (i/length) * second_pt[2] + (length - i)/length * fourth_pt[2]
+			sixth_pt = np.array([pt_x,pt_y,pt_z])
+			cube_shell = reposition(fifth_pt,sixth_pt,self.gusset_shell)
+			all_cubes += cube_shell
+
+		return all_cubes
+
+def bisect_floor(input) -> OpenSCADObject:
+	size = 300
+	floor = translate([0,0,-150])(cube([300,300,300],center = True))
+	return input - floor
+
+def reposition(first_pt,second_pt,func) -> OpenSCADObject:
+	if type(first_pt) == list:
+		first_pt = np.array(first_pt)
+	if type(second_pt) == list:
+		second_pt = np.array(second_pt)
+	norm_v = second_pt - first_pt
+	length = np.linalg.norm(norm_v)
+	cube_shell = func(length)
+	cube_shell = translate([0,0,length/2])(cube_shell)
+	x = norm_v[0]
+	y = norm_v[1]
+	z = norm_v[2]
+	b = np.degrees(np.arccos(z/length))
+	c = np.degrees(np.arctan2(y,x))
+	cube_shell = rotate([0,b,c])(cube_shell)
+
+	x = first_pt[0]
+	y = first_pt[1]
+	z = first_pt[2]
+	cube_shell = translate([x,y,z])(cube_shell)
 	return cube_shell
 
 def balance_on_corner_and_cutoff(a) -> OpenSCADObject:
@@ -201,7 +247,7 @@ def balance_on_corner_and_cutoff(a) -> OpenSCADObject:
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
-#	gusset_pts = [[0,0,0],[60,0,0]]
+	gusset_pts = [[0,0,0],[60,0,0]]
 
 	# tt = shell_thickness + e_thickness/2 
 	# shell = shell_pos([60,0,0],[-60,0,0])
@@ -212,13 +258,24 @@ if __name__ == "__main__":
 	# cutout += cutout_pos([0,0,60],[0,0,tt],[0,0,1,1,0,0,0,0])
 	# a = shell - cutout
 
-	tt = shell_thickness + e_thickness/2 
-	shell = shell_pos([60,0,0],[-60,0,0])
-	shell += shell_pos([60,0,0],[-60,60,0])
-	cutout = cutout_pos([60,0,0],[-60,0,0],[0,1,1,0,0,0,0,0])
-	cutout += cutout_pos([0,60,0],[0,60,0],[0,0,1,1,0,0,0,0])
-	a = shell - cutout
+	points = [[60,0,0],[-60,0,0]],[[60,60,60],[-60,60,60]]
 
+	tt = shell_thickness + e_thickness/2
+	shell1 = Shell(points[0][0],points[0][1]) 
+	shell2 = Shell(points[1][0],points[1][1]) 
+	shell = shell1.shell_pos()
+	shell += shell2.shell_pos()
+	cutout = cutout_pos(points[0][0],points[0][1],[0,1,1,0,0,0,0,0])
+	cutout += cutout_pos(points[1][0],points[1][1],[0,0,1,1,0,0,0,0])
+	gusset1 = Gusset(10)
+	a = shell
+	a += gusset1.gusset(points)
+	a -= cutout
+	# a = gusset(points)
+
+	# cutout = cutout_pos(points[0][0],points[0][1],[0,1,1,0,0,1,1,1])
+	# cutout += cutout_pos(points[1][0],points[1][1],[0,0,1,1,0,1,1,1])
+	# a = cutout
 #	a = balance_on_corner_and_cutoff(a)
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
