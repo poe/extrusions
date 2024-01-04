@@ -199,65 +199,43 @@ class Gusset:
 		self.thickness = thickness
 		Gusset.instances.append(self)
 
-	def gusset_shell(self,length) -> OpenSCADObject:
-		total = self.thickness
-		return cube([total, total, length], center=True)
+	def make_stick_one(self,length) -> OpenSCADObject:
+		length_one = get_length(self.start_pt_one,self.end_pt_one)
+		stick_one = cube([self.thickness,self.thickness,length_one],center=True)
+		return stick_one
 
-	def gusset(self) -> OpenSCADObject:
-		first_pt = np.array(self.start_pt_one)
-		second_pt = np.array(self.end_pt_one)
-		# first_cube_shell = reposition(first_pt,second_pt,gusset_shell)
+	def make_stick_two(self,length) -> OpenSCADObject:
+		length_two = get_length(self.start_pt_two,self.end_pt_two)
+		stick_two = cube([self.thickness,self.thickness,length_two],center=True)
+		return stick_two
 
-		third_pt = np.array(self.start_pt_two)
-		fourth_pt = np.array(self.end_pt_two)
-		# second_cube_shell = reposition(third_pt,fourth_pt,gusset_shell)
-
-		# all_cubes = first_cube_shell + second_cube_shell
-		all_cubes = OpenSCADObject(name="polygon",params={})
-
-		length = 12
-		for i in range(1,length):
-			# pt_x = (i/length) * first_pt[0] + (length - i)/length * third_pt[0]
-			# pt_y = (i/length) * first_pt[1] + (length - i)/length * third_pt[1]
-			# pt_z = (i/length) * first_pt[2] + (length - i)/length * third_pt[2]
-			# fifth_pt = np.array([pt_x,pt_y,pt_z])
-			# pt_x = (i/length) * second_pt[0] + (length - i)/length * fourth_pt[0]
-			# pt_y = (i/length) * second_pt[1] + (length - i)/length * fourth_pt[1]
-			# pt_z = (i/length) * second_pt[2] + (length - i)/length * fourth_pt[2]
-			# sixth_pt = np.array([pt_x,pt_y,pt_z])
-			pt_x = (i/length) * first_pt[0] + (length - i)/length * second_pt[0]
-			pt_y = (i/length) * first_pt[1] + (length - i)/length * second_pt[1]
-			pt_z = (i/length) * first_pt[2] + (length - i)/length * second_pt[2]
-			fifth_pt = np.array([pt_x,pt_y,pt_z])
-			pt_x = (i/length) * third_pt[0] + (length - i)/length * fourth_pt[0]
-			pt_y = (i/length) * third_pt[1] + (length - i)/length * fourth_pt[1]
-			pt_z = (i/length) * third_pt[2] + (length - i)/length * fourth_pt[2]
-			sixth_pt = np.array([pt_x,pt_y,pt_z])
-			cube_shell = reposition(fifth_pt,sixth_pt,self.gusset_shell)
-			all_cubes += cube_shell
-
-		return all_cubes
+	def gusset_sticks(self) -> OpenSCADObject:
+		stick_one = reposition(self.start_pt_one,self.end_pt_one,self.make_stick_one)
+		stick_two = reposition(self.start_pt_two,self.end_pt_two,self.make_stick_two)
+		return stick_one + stick_two
 
 	def hull_gusset(self) -> OpenSCADObject:
-		shell1 = Shell(self.start_pt_one,self.end_pt_one)
-		shell2 = Shell(self.start_pt_two,self.end_pt_two)
-		shells = shell1.shell_pos() + shell2.shell_pos()
-		print(shells)
-		gusset = hull()(shells)
+		gusset = hull()(self.gusset_sticks())
 		return gusset
 
 	def union_all_gussets() -> OpenSCADObject:
 		all_gussets = OpenSCADObject(name="union",params={})
 		for i in Gusset.instances:
 			all_gussets += i.hull_gusset()
-			print(i)
-			print(i.gusset())
 		return all_gussets
 
 def bisect_floor(input) -> OpenSCADObject:
 	size = 300
 	floor = translate([0,0,-150])(cube([300,300,300],center = True))
 	return input - floor
+
+def get_length(first_pt,second_pt):
+	if type(first_pt) == list:
+		first_pt = np.array(first_pt)
+	if type(second_pt) == list:
+		second_pt = np.array(second_pt)
+	norm_v = second_pt - first_pt
+	return np.linalg.norm(norm_v)
 
 def reposition(first_pt,second_pt,func) -> OpenSCADObject:
 	if type(first_pt) == list:
@@ -290,18 +268,8 @@ def balance_on_corner_and_cutoff(a) -> OpenSCADObject:
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
-#	gusset_pts = [[0,0,0],[60,0,0]]
-
-	# tt = shell_thickness + e_thickness/2 
-	# shell = shell_pos([60,0,0],[-60,0,0])
-	# shell += shell_pos([0,0,0],[0,60,0])
-	# shell += shell_pos([0,0,60],[0,0,0])
-	# cutout = cutout_pos([60,0,0],[-60,0,0],[0,1,1,0,0,0,0,0])
-	# cutout += cutout_pos([0,60,0],[0,tt,0],[0,0,1,1,0,0,0,0])
-	# cutout += cutout_pos([0,0,60],[0,0,tt],[0,0,1,1,0,0,0,0])
-	# a = shell - cutout
-
 	points = [[60,0,0],[-60,0,0]],[[0,0,0],[0,60,0]],[[0,0,60],[0,0,0]]
+	center = [0,0,0]
 
 	tt = shell_thickness + e_thickness/2
 	shell1 = Shell(points[0][0],points[0][1]) 
@@ -313,14 +281,15 @@ if __name__ == "__main__":
 	cutout = cutout1.cutout_pos(points[0][0],points[0][1],[0,1,1,0,0,0,0,0])
 	cutout += cutout2.cutout_pos(points[1][0],points[1][1],[0,0,0,0,1,1,0,0])
 	cutout += cutout3.cutout_pos(points[2][0],points[2][1],[0,0,1,1,0,0,0,0])
-#	gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
-	gusset2 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
-#	gusset3 = Gusset(points[1][0],points[1][1],points[0][0],points[0][1])
+	gusset1 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
+	gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
+	gusset3 = Gusset(points[2][0],points[2][1],center,points[0][0])
 
 	a = Shell.union_all_shells()
 	a += Gusset.union_all_gussets()
 	a -= cutout
 
+	# a = Gusset.union_all_gussets()
 
 	a = balance_on_corner_and_cutoff(a)
 
