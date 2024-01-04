@@ -133,7 +133,7 @@ class Cutout:
 		if ends[5]:
 			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(90,v=FORWARD_VEC)(self.slot()) )))
 		if ends[6]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))((slot())))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))((self.slot())))
 		if ends[7]:
 			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(270,v=FORWARD_VEC)(self.slot()) )))
 		cutouts += extrusion_profile
@@ -180,6 +180,15 @@ class Shell:
 		cube_shell = reposition(self.start_pt,self.end_pt,self.make_shell)
 		return cube_shell
 
+	def union_all_shells() -> OpenSCADObject:
+		all_shells = OpenSCADObject(name="union",params={})
+		for i in Shell.instances:
+			all_shells += i.shell_pos()
+			print(i)
+			print(i.shell_pos())
+		return all_shells
+
+
 class Gusset:
 	instances = []
 	def __init__(self,start_pt_one,end_pt_one,start_pt_two,end_pt_two,thickness= 10):
@@ -194,32 +203,56 @@ class Gusset:
 		total = self.thickness
 		return cube([total, total, length], center=True)
 
-	def gusset(self,points) -> OpenSCADObject:
-		first_pt = np.array(points[0][0])
-		second_pt = np.array(points[1][0])
+	def gusset(self) -> OpenSCADObject:
+		first_pt = np.array(self.start_pt_one)
+		second_pt = np.array(self.end_pt_one)
 		# first_cube_shell = reposition(first_pt,second_pt,gusset_shell)
 
-		third_pt = np.array(points[0][1])
-		fourth_pt = np.array(points[1][1])
+		third_pt = np.array(self.start_pt_two)
+		fourth_pt = np.array(self.end_pt_two)
 		# second_cube_shell = reposition(third_pt,fourth_pt,gusset_shell)
 
 		# all_cubes = first_cube_shell + second_cube_shell
-		all_cubes = OpenSCADObject(name="all_cubes",params={})
+		all_cubes = OpenSCADObject(name="polygon",params={})
 
 		length = 12
 		for i in range(1,length):
-			pt_x = (i/length) * first_pt[0] + (length - i)/length * third_pt[0]
-			pt_y = (i/length) * first_pt[1] + (length - i)/length * third_pt[1]
-			pt_z = (i/length) * first_pt[2] + (length - i)/length * third_pt[2]
+			# pt_x = (i/length) * first_pt[0] + (length - i)/length * third_pt[0]
+			# pt_y = (i/length) * first_pt[1] + (length - i)/length * third_pt[1]
+			# pt_z = (i/length) * first_pt[2] + (length - i)/length * third_pt[2]
+			# fifth_pt = np.array([pt_x,pt_y,pt_z])
+			# pt_x = (i/length) * second_pt[0] + (length - i)/length * fourth_pt[0]
+			# pt_y = (i/length) * second_pt[1] + (length - i)/length * fourth_pt[1]
+			# pt_z = (i/length) * second_pt[2] + (length - i)/length * fourth_pt[2]
+			# sixth_pt = np.array([pt_x,pt_y,pt_z])
+			pt_x = (i/length) * first_pt[0] + (length - i)/length * second_pt[0]
+			pt_y = (i/length) * first_pt[1] + (length - i)/length * second_pt[1]
+			pt_z = (i/length) * first_pt[2] + (length - i)/length * second_pt[2]
 			fifth_pt = np.array([pt_x,pt_y,pt_z])
-			pt_x = (i/length) * second_pt[0] + (length - i)/length * fourth_pt[0]
-			pt_y = (i/length) * second_pt[1] + (length - i)/length * fourth_pt[1]
-			pt_z = (i/length) * second_pt[2] + (length - i)/length * fourth_pt[2]
+			pt_x = (i/length) * third_pt[0] + (length - i)/length * fourth_pt[0]
+			pt_y = (i/length) * third_pt[1] + (length - i)/length * fourth_pt[1]
+			pt_z = (i/length) * third_pt[2] + (length - i)/length * fourth_pt[2]
 			sixth_pt = np.array([pt_x,pt_y,pt_z])
 			cube_shell = reposition(fifth_pt,sixth_pt,self.gusset_shell)
 			all_cubes += cube_shell
 
 		return all_cubes
+
+	def hull_gusset(self) -> OpenSCADObject:
+		shell1 = Shell(self.start_pt_one,self.end_pt_one)
+		shell2 = Shell(self.start_pt_two,self.end_pt_two)
+		shells = shell1.shell_pos() + shell2.shell_pos()
+		print(shells)
+		gusset = hull()(shells)
+		return gusset
+
+	def union_all_gussets() -> OpenSCADObject:
+		all_gussets = OpenSCADObject(name="union",params={})
+		for i in Gusset.instances:
+			all_gussets += i.hull_gusset()
+			print(i)
+			print(i.gusset())
+		return all_gussets
 
 def bisect_floor(input) -> OpenSCADObject:
 	size = 300
@@ -274,21 +307,22 @@ if __name__ == "__main__":
 	shell1 = Shell(points[0][0],points[0][1]) 
 	shell2 = Shell(points[1][0],points[1][1]) 
 	shell3 = Shell(points[2][0],points[2][1]) 
-	shell = shell1.shell_pos()
-	shell += shell2.shell_pos()
-	shell += shell3.shell_pos()
 	cutout1 = Cutout()
 	cutout2 = Cutout()
 	cutout3 = Cutout()
 	cutout = cutout1.cutout_pos(points[0][0],points[0][1],[0,1,1,0,0,0,0,0])
-	cutout += cutout2.cutout_pos(points[1][0],points[1][1],[0,0,1,1,0,0,0,0])
+	cutout += cutout2.cutout_pos(points[1][0],points[1][1],[0,0,0,0,1,1,0,0])
 	cutout += cutout3.cutout_pos(points[2][0],points[2][1],[0,0,1,1,0,0,0,0])
-	gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
-	a = shell
-	a += gusset1.gusset(points)
+#	gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
+	gusset2 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
+#	gusset3 = Gusset(points[1][0],points[1][1],points[0][0],points[0][1])
+
+	a = Shell.union_all_shells()
+	a += Gusset.union_all_gussets()
 	a -= cutout
 
-#	a = balance_on_corner_and_cutoff(a)
+
+	a = balance_on_corner_and_cutoff(a)
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")
