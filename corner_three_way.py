@@ -26,7 +26,10 @@ gap_size = 3 - tolerance
 inner_corner = e_thickness/2 + tolerance;
 nub_length = 6 - tolerance
 
-class Cutout:
+class Extrusions:
+	def __init__(self):
+		pass
+
 	def e_profile(self) -> List[Point3]:
 		profile_pts = [[inner_corner,inner_corner,0],[inner_corner,gap_size,0],[inner_corner - nub_length, gap_size,0],
 						[inner_corner - nub_length,0,0],[0,0,0]]
@@ -41,11 +44,9 @@ class Cutout:
 		extruded += mirror(v=(1,-1))(extruded)
 		return extruded
 
-	def make_three_e(self,extrusion_profile) -> OpenSCADObject:
-		three_extrusions = translate([0,0,10+shell_thickness])(extrusion_profile)
-		three_extrusions += translate([10+shell_thickness,0,0])(rotate(a=90, v=FORWARD_VEC)(extrusion_profile))
-		three_extrusions += translate(([0,50,0]))(rotate(a=90, v=RIGHT_VEC)(extrusion_profile))
-		return three_extrusions
+class Slots:
+	def __init__(self):
+		pass
 
 	def hammer_nut_hole(self) -> OpenSCADObject:
 		inset_length = 12
@@ -91,6 +92,8 @@ class Cutout:
 		screw_slots+= rotate(270,v=FORWARD_VEC)(slot())
 		return screw_slots
 
+class Cutout:
+
 	def pyramid(self,size = 15) -> OpenSCADObject:
 		base_pts = [[size,size,0],[-size,size,0],[-size,-size,0],[size,-size,0]]
 		path_pts = [[0,0,0],[0,0,size]]
@@ -107,35 +110,39 @@ class Cutout:
 		return profile_pts
 
 	def star_spike(self) -> OpenSCADObject:
-		spike = self.extrude_and_mirror_profile(self.star_profile(),20,0)
+		e = Extrusions()
+		spike = e.extrude_and_mirror_profile(self.star_profile(),20,0)
 		spike = rotate(-90,v=RIGHT_VEC)(spike())
 		spike = translate([0,11.9,0])(spike)
 		return spike
 
 	def cutouts(self,ends = [1,1,1,1,1,1,1,1],length = 100) -> OpenSCADObject:
+		e = Extrusions()
 		extrusion_offset = 10
-		extrusion_profile = self.extrude_and_mirror_profile(self.e_profile(),length+extrusion_offset,1)
+		extrusion_profile = e.extrude_and_mirror_profile(e.e_profile(),length+extrusion_offset,1)
 		extrusion_profile = translate([0,-extrusion_offset,0])(rotate(-90, v=RIGHT_VEC)(extrusion_profile))
 
 		cutouts = self.pyramid(15) + self.star_spike()
 		cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( self.pyramid(15) + self.star_spike() )))  
 		
+		s = Slots()
+
 		if ends[0]:
-			cutouts += rotate(180,v=FORWARD_VEC)(self.slot())
+			cutouts += rotate(180,v=FORWARD_VEC)(s.slot())
 		if ends[1]:
-			cutouts += rotate(90,v=FORWARD_VEC)(self.slot())
+			cutouts += rotate(90,v=FORWARD_VEC)(s.slot())
 		if ends[2]:
-			cutouts += self.slot()
+			cutouts += s.slot()
 		if ends[3]:
-			cutouts += rotate(270,v=FORWARD_VEC)(self.slot())
+			cutouts += rotate(270,v=FORWARD_VEC)(s.slot())
 		if ends[4]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(180,v=FORWARD_VEC)(self.slot()) )))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(180,v=FORWARD_VEC)(s.slot()) )))
 		if ends[5]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(90,v=FORWARD_VEC)(self.slot()) )))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(90,v=FORWARD_VEC)(s.slot()) )))
 		if ends[6]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))((self.slot())))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))((s.slot())))
 		if ends[7]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(270,v=FORWARD_VEC)(self.slot()) )))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( rotate(270,v=FORWARD_VEC)(s.slot()) )))
 		cutouts += extrusion_profile
 		cutouts = rotate(90,v=UP_VEC)(cutouts)
 		return cutouts
