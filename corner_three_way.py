@@ -129,26 +129,12 @@ class EndCutouts:
 		pyramid = translate([0,-10,0])(pyramid)
 		return pyramid
 
-	def star_profile(self) -> List[Point3]:
-		corner = inner_corner
-		profile_pts = [[corner,corner,0],[corner,gap_size,0],
-						[corner - nub_length,0,0],[0,0,0]]
-
-		return profile_pts
-
-	def star_spike(self) -> OpenSCADObject:
-		e = ExtrusionCutouts()
-		spike = e.extrude_and_mirror_profile(self.star_profile(),20,0)
-		spike = rotate(-90,v=RIGHT_VEC)(spike())
-		spike = translate([0,11.9,0])(spike)
-		return spike
-
 	def cutouts(self,length) -> OpenSCADObject:
 		cutouts = OpenSCADObject(name="union",params={})
 		if self.blind_ends[0]:
-			cutouts += self.pyramid(15) + self.star_spike()
+			cutouts += self.pyramid(15)
 		if self.blind_ends[1]:
-			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( self.pyramid(15) + self.star_spike() )))
+			cutouts += translate([0,length-9,0])(rotate(180,v=(1,0,0))(( self.pyramid(15) )))
 		return cutouts 
 
 
