@@ -184,8 +184,6 @@ class Shell:
 		all_shells = OpenSCADObject(name="union",params={})
 		for i in Shell.instances:
 			all_shells += i.shell_pos()
-			print(i)
-			print(i.shell_pos())
 		return all_shells
 
 
@@ -291,7 +289,7 @@ if __name__ == "__main__":
 
 	# a = Gusset.union_all_gussets()
 
-	a = balance_on_corner_and_cutoff(a)
+#	a = balance_on_corner_and_cutoff(a)
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")
