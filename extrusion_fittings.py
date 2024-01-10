@@ -287,8 +287,11 @@ class Manip:
 		return a
 
 class Fittings:
-	def corner_three_way() -> OpenSCADObject:
-		points = [[60,0,0],[-16,0,0]],[[0,14,0],[0,60,0]],[[0,0,60],[0,0,14]]
+	def __init__(self,e_distance = 40):
+		self.e_distance = e_distance
+
+	def corner_three_way(self) -> OpenSCADObject:
+		points = [[self.e_distance,0,0],[-16,0,0]],[[0,14,0],[0,self.e_distance,0]],[[0,0,self.e_distance],[0,0,14]]
 		center = [0,0,0]
 
 		shell1 = Shell(points[0][0],points[0][1])
@@ -302,33 +305,13 @@ class Fittings:
 		gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
 		gusset3 = Gusset(points[2][0],points[2][1],center,points[0][0])
 
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		a = Manip.balance_on_corner_and_cutoff(a)
 
 		return a
 
-	def corner_three_way_lite() -> OpenSCADObject:
-		points = [[40,0,0],[-16,0,0]],[[0,14,0],[0,40,0]],[[0,0,40],[0,0,14]]
-		center = [0,0,0]
-
-		shell1 = Shell(points[0][0],points[0][1])
-		shell2 = Shell(points[1][0],points[1][1])
-		shell3 = Shell(points[2][0],points[2][1])
-		cutout1 = Cutout(points[0][0],points[0][1],[0,1,1,0,0,0,0,0],[1,0])
-		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,0,0],[0,1])
-		cutout3 = Cutout(points[2][0],points[2][1],[0,0,1,1,0,0,0,0],[1,0])
-
-		gusset1 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
-		gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
-		gusset3 = Gusset(points[2][0],points[2][1],center,points[0][0])
-
-		a = Fittings.merge_everything()
-		a = Manip.balance_on_corner_and_cutoff(a)
-
-		return a
-
-	def corner_two_way() -> OpenSCADObject:
-		points = [[60,0,0],[-16,0,0]],[[0,14,0],[0,60,0]],[[0,0,60],[0,0,14]]
+	def corner_two_way(self) -> OpenSCADObject:
+		points = [[self.e_distance,0,0],[-16,0,0]],[[0,14,0],[0,self.e_distance,0]],[[0,0,self.e_distance],[0,0,14]]
 		center = [0,0,0]
 
 		shell1 = Shell(points[0][0],points[0][1])
@@ -336,88 +319,70 @@ class Fittings:
 		cutout1 = Cutout(points[0][0],points[0][1],[0,1,1,0,0,0,0,0],[1,0])
 		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,0,0],[0,1])
 
-		# gusset1 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
 		gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
 
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		a = Manip.balance_on_corner_and_cutoff(a)
 
 		return a
 
-	def corner_two_way_lite() -> OpenSCADObject:
-		points = [[40,0,0],[-16,0,0]],[[0,14,0],[0,40,0]],[[0,0,40],[0,0,14]]
-		center = [0,0,0]
-
-		shell1 = Shell(points[0][0],points[0][1])
-		shell2 = Shell(points[1][0],points[1][1])
-		cutout1 = Cutout(points[0][0],points[0][1],[0,1,1,0,0,0,0,0],[1,0])
-		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,0,0],[0,1])
-
-		# gusset1 = Gusset(points[1][0],points[1][1],points[2][0],points[2][1])
-		gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
-
-		a = Fittings.merge_everything()
-		a = Manip.balance_on_corner_and_cutoff(a)
-
-		return a
-
-	def cross() -> OpenSCADObject:
-		points = [[[-16,0,0],[60,0,0]],[[0,-16,0],[0,60,0]]]
+	def cross(self) -> OpenSCADObject:
+		points = [[[-16,0,0],[self.e_distance,0,0]],[[0,-16,0],[0,self.e_distance,0]]]
 		shell1 = Shell(points[0][0],points[0][1]) 
 		shell2 = Shell(points[1][0],points[1][1])
 		cutout1 = Cutout(points[0][0],points[0][1],[0,0,0,0,1,1,1,1],[1,1])
 		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,1,1],[1,1])
 		gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
 
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		a = Manip.balance_on_edge_and_cutoff(a)
 		return a
 
-	def tube() -> OpenSCADObject:
-		points = [[[-30,0,20],[30,0,20]]]
+	def tube(self) -> OpenSCADObject:
+		points = [[[-self.e_distance,0,0],[self.e_distance,0,0]]]
 		shell1 = Shell(points[0][0],points[0][1]) 
 		cutout1 = Cutout(points[0][0],points[0][1],[1,1,1,1,1,1,1,1],[1,1])
 
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		return a
 
 
-	def offset_cross() -> OpenSCADObject:
-		points = [[[-16,0,15],[60,0,15]],[[0,-16,-15],[0,60,-15]]]
+	def offset_cross(self) -> OpenSCADObject:
+		points = [[[-16,0,15],[self.e_distance,0,15]],[[0,-16,-15],[0,self.e_distance,-15]]]
 		shell1 = Shell(points[0][0],points[0][1]) 
 		shell2 = Shell(points[1][0],points[1][1])
 		cutout1 = Cutout(points[0][0],points[0][1],[0,0,0,0,1,1,1,1],[1,1])
 		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,1,1],[1,1])
 		gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
 
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		a = Manip.balance_on_edge_and_cutoff(a)
 		return a
 
-	def tee() -> OpenSCADObject:
-		points = [[[-40,0,20],[40,0,20]],[[0,15,20],[0,60,20]]]
+	def tee(self) -> OpenSCADObject:
+		points = [[[-self.e_distance,0,20],[self.e_distance,0,20]],[[0,15,20],[0,self.e_distance,20]]]
 		shell1 = Shell(points[0][0],points[0][1])
 		shell2 = Shell(points[1][0],points[1][1])
 		cutout1 = Cutout(points[0][0],points[0][1],[1,0,1,1,1,0,1,1],[1,1])
 		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,1,1],[0,1])
 		gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
 	
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		return a
 
-	def ell() -> OpenSCADObject:
-		points = [[[-20,0,20],[40,0,20]],[[0,15,20],[0,40,20]]]
+	def ell(self) -> OpenSCADObject:
+		points = [[[-20,0,20],[self.e_distance,0,20]],[[0,15,20],[0,self.e_distance,20]]]
 		shell1 = Shell(points[0][0],points[0][1])
 		shell2 = Shell(points[1][0],points[1][1])
 		cutout1 = Cutout(points[0][0],points[0][1],[0,0,0,0,0,0,1,1],[1,1])
 		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,0,1,1,0],[0,1])
 		gusset1 = Gusset(points[0][0],points[0][1],points[1][0],points[1][1])
 	
-		a = Fittings.merge_everything()
+		a = Fittings.merge_everything(self)
 		a = Manip.balance_on_edge_and_cutoff(a)
 		return a
 
-	def merge_everything() -> OpenSCADObject:
+	def merge_everything(self) -> OpenSCADObject:
 		a = Shell.union_all_shells()
 		a += Gusset.union_all_gussets()
 		a -= Cutout.union_all_cutouts()
@@ -426,15 +391,14 @@ class Fittings:
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
-	# a = Fittings.tube()
-	# a = Fittings.cross()
-	# a = Fittings.offset_cross()
-	# a = Fittings.tee()
-	a = Fittings.ell()
-	# a = Fittings.corner_three_way()
-	# a = Fittings.corner_three_way_lite()
-	# a = Fittings.corner_two_way_lite()
-	# a = Fittings.corner_two_way()
+	f = Fittings(40)
+	a = f.tube()
+	# a = f.cross()
+	# a = f.offset_cross()
+	# a = f.tee()
+	# a = f.ell()
+	# a = f.corner_three_way()
+	# a = f.corner_two_way()
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")

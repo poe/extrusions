@@ -62,7 +62,12 @@ if __name__ == "__main__":
 	h = HoldingBlock()
 	a = h.diagonal_block()
 	a = h.bisect_floor(a)
-	# a = h.peg()
+	f = ef.Fittings(35)
+	a = translate([0,0,15])(a)
+	a += rotate(a=90,v=(0,0,1))(f.tube())	
+	# a = rotate(a=15,v=(1,0,0))(a)
+	a = translate([0,0,-11])(a)
+	a = h.bisect_floor(a)
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")
