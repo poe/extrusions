@@ -391,13 +391,13 @@ class Fittings:
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
-	f = Fittings(40)
-	a = f.tube()
+	f = Fittings(100)
+	# a = f.tube()
 	# a = f.cross()
 	# a = f.offset_cross()
 	# a = f.tee()
 	# a = f.ell()
-	# a = f.corner_three_way()
+	a = f.corner_three_way()
 	# a = f.corner_two_way()
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
