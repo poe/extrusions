@@ -28,18 +28,37 @@ include <C:\Users\Paul Showalter\AppData\Local\Packages\PythonSoftwareFoundation
 include <C:\Users\Paul Showalter\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\solid2\extensions\bosl2\BOSL2\partitions.scad>;
 include <C:\Users\Paul Showalter\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\site-packages\solid2\extensions\bosl2\BOSL2\gears.scad>;
 
-difference() {
-	cylinder($fn = 256, center = true, h = 14, r = 12.5);
+union() {
 	difference() {
-		cylinder($fn = 256, center = true, h = 30, r = 2.75);
-		translate(v = [5.2, 0, 0]) {
-			cube(center = true, size = [6, 6, 40]);
+		translate(v = [0, 0, -4]) {
+			union() {
+				spur_gear(helical = 30, pitch = 8, pressure_angle = 20, slices = 5, teeth = 29, thickness = 5);
+				translate(v = [0, 0, 5]) {
+					mirror(v = [0, 0, 1]) {
+						spur_gear(helical = 30, pitch = 8, pressure_angle = 20, slices = 5, teeth = 29, thickness = 5);
+					}
+				}
+			}
+		}
+		translate(v = [0, 0, 8]) {
+			cube(center = true, size = [80, 80, 12]);
 		}
 	}
-	translate(v = [8, 0, 0]) {
-		rotate(a = 90, v = [0, 0, 1]) {
-			rotate(a = 90, v = [1, 0, 0]) {
-				cylinder($fn = 256, center = true, h = 16, r = 2);
+	translate(v = [0, 0, 8]) {
+		difference() {
+			cylinder($fn = 256, center = true, h = 14, r = 12.5);
+			difference() {
+				cylinder($fn = 256, center = true, h = 30, r = 2.75);
+				translate(v = [5.2, 0, 0]) {
+					cube(center = true, size = [6, 6, 40]);
+				}
+			}
+			translate(v = [8, 0, 0]) {
+				rotate(a = 90, v = [0, 0, 1]) {
+					rotate(a = 90, v = [1, 0, 0]) {
+						cylinder($fn = 256, center = true, h = 16, r = 2);
+					}
+				}
 			}
 		}
 	}

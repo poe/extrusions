@@ -17,11 +17,17 @@ class ExtrusionCutouts:
 		self.gap_size = gap_size - tolerance
 		self.e_thickness = e_thickness
 
-	def e_profile(self) -> List[Point3]:
-		profile_pts = [[self.inner_corner,self.inner_corner,0],
-						[self.inner_corner,self.gap_size,0],
-						[self.inner_corner - self.nub_length, self.gap_size,0],
-						[self.inner_corner - self.nub_length,0,0],[0,0,0]]
+	def e_profile(self,inner_fins=False) -> List[Point3]:
+		if inner_fins:
+			profile_pts = [[self.inner_corner,self.inner_corner,0],
+							[self.inner_corner,self.gap_size,0],
+							[self.inner_corner - self.nub_length, self.gap_size,0],
+							[self.inner_corner - self.nub_length,0,0],[0,0,0]]
+		else:
+			profile_pts = [[self.inner_corner,self.inner_corner,0],
+							[self.inner_corner,0,0],
+							[self.inner_corner - self.nub_length, 0,0],
+							[self.inner_corner - self.nub_length,0,0],[0,0,0]]			
 		return profile_pts
 
 	def extrude_and_mirror_profile(self,e_profile,length,scale) -> OpenSCADObject:
@@ -310,6 +316,27 @@ class Fittings:
 
 		return a
 
+	def corner_two_way_diag(self) -> OpenSCADObject:
+		points = [[self.e_distance,0,0],[-16,0,0]], \
+					[[0,14,0],[0,self.e_distance,0]], \
+					[[self.e_distance,self.e_distance,0],[20,20,0]]
+		center = [0,0,0]
+
+		shell1 = Shell(points[0][0],points[0][1])
+		shell2 = Shell(points[1][0],points[1][1])
+		shell3 = Shell(points[2][0],points[2][1])
+
+		cutout1 = Cutout(points[0][0],points[0][1],[0,1,1,0,0,0,0,0],[1,0])
+		cutout2 = Cutout(points[1][0],points[1][1],[0,0,0,0,1,1,0,0],[0,1])
+		cutout3 = Cutout(points[2][0],points[2][1],[1,1,1,1,0,0,0,0],[1,0])
+
+		gusset2 = Gusset(points[1][0],points[1][1],center,points[0][0])
+
+		a = Fittings.merge_everything(self)
+		a = Manip.balance_on_corner_and_cutoff(a)
+
+		return a
+
 	def corner_two_way(self) -> OpenSCADObject:
 		points = [[self.e_distance,0,0],[-16,0,0]],[[0,14,0],[0,self.e_distance,0]],[[0,0,self.e_distance],[0,0,14]]
 		center = [0,0,0]
@@ -346,6 +373,13 @@ class Fittings:
 		a = Fittings.merge_everything(self)
 		return a
 
+	def one_end_tube(self) -> OpenSCADObject:
+		points = [[[-self.e_distance,0,0],[self.e_distance,0,0]]]
+		shell1 = Shell(points[0][0],points[0][1]) 
+		cutout1 = Cutout(points[0][0],points[0][1],[0,0,0,0,1,1,1,1],[1,1])
+
+		a = Fittings.merge_everything(self)
+		return a
 
 	def offset_cross(self) -> OpenSCADObject:
 		points = [[[-16,0,15],[self.e_distance,0,15]],[[0,-16,-15],[0,self.e_distance,-15]]]
@@ -391,14 +425,15 @@ class Fittings:
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
-	f = Fittings(100)
+	f = Fittings(40)
 	# a = f.tube()
 	# a = f.cross()
 	# a = f.offset_cross()
 	# a = f.tee()
-	# a = f.ell()
-	a = f.corner_three_way()
+	a = f.ell()
+	# a = f.corner_three_way()
 	# a = f.corner_two_way()
+	# a = f.corner_two_way_diag()
 
-	file_out = scad_render_to_file(a,  out_dir=out_dir, include_orig_code=True)
+	file_out = scad_render_to_file(a,  out_dir=out_dir)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")

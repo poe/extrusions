@@ -32,7 +32,7 @@ class disk():
 		lc = cylinder(r = self.radius - self.thickness/2,h=1,center = True, _fn = self.cyl_sides)
 		lc = translate([0,0,-self.thickness/2])(lc)
 		fc = hull()(oc+uc+lc)
-		ic = cylinder(r = self.diameter/2.5, h = self.thickness*5,center = True, _fn = self.cyl_sides)
+		ic = cylinder(r = self.diameter/4, h = self.thickness*5,center = True, _fn = self.cyl_sides)
 		d_gear = self.gear_ring()
 		fc += d_gear
 		return fc - ic
@@ -53,8 +53,8 @@ class disk():
 		bottom_gear = translate([0,0,5])(bottom_gear)
 		d_gears = top_gear + bottom_gear
 		d_gears = translate([0,0,-4])(d_gears)
-		ic = cylinder(r = 30, h = self.thickness*5,center = True, _fn = self.cyl_sides)
-		return d_gears - ic
+		# ic = cylinder(r = 30, h = self.thickness*5,center = True, _fn = self.cyl_sides)
+		return d_gears
 
 	def motor_connector(self):
 		mount = cylinder(r = 12.5,h=14,center = True, _fn = 256)
@@ -68,25 +68,32 @@ class disk():
 		shaft = shaft - flat
 		mount = mount - shaft
 		mount = mount - set_screw
+		mount = translate([0,0,8])(mount)
 		return mount
+
+	def drive_ring_cutoff(self):
+		drc = cube([80,80,self.thickness],center=True)
+		drc = translate([0,0,self.thickness-4])(drc)
+		return drc
 
 if __name__ == "__main__":
 	out_dir = sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent
 
 	e = ef.Fittings(25)
 	d = disk()
-	post = e.tube()
-	a = d.outer_disk()
-	post = rotate(a=90,v=[0,1,0])(post)
-	post = translate([68,0,20])(post)
-	posts = post
-	posts += rotate(a=90,v=[0,0,1])(post)
-	posts += rotate(a=180,v=[0,0,1])(post)
-	posts += rotate(a=270,v=[0,0,1])(post)
+	# post = e.tube()
+	# a = d.outer_disk()
+	# post = rotate(a=90,v=[0,1,0])(post)
+	# post = translate([68,0,20])(post)
+	# posts = post
+	# posts += rotate(a=90,v=[0,0,1])(post)
+	# posts += rotate(a=180,v=[0,0,1])(post)
+	# posts += rotate(a=270,v=[0,0,1])(post)
 	# a += posts
 	# a = d.outer_disk()
-	# a = d.drive_ring()
-	a = d.motor_connector()
+	a = d.drive_ring()
+	a -= d.drive_ring_cutoff()
+	a += d.motor_connector()
 
 	file_out = scad_render_to_file(a,  out_dir=out_dir)
 	print(f"{__file__}: SCAD file written to: \n{file_out}")

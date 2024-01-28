@@ -58,6 +58,11 @@ class mount():
 		mm -= self.motor_cutout()
 		return mm
 
+	def offset_block(self) -> OpenSCADObject:
+		ob = cube([17,self.total_size,self.motor_thickness],center=True)
+		ob = translate([-self.total_size/2-8,0,6])(ob)
+		return ob
+
 	def bisect_floor(self,input) -> OpenSCADObject:
 		size = 300
 		floor = translate([0,0,-150])(cube([300,300,300],center = True))
@@ -72,8 +77,9 @@ if __name__ == "__main__":
 	a = m.motor_mount()
 	t = e.tube()
 	t = rotate(a = 90,v = (0,1,0))(t)
-	t = translate([-39,0,-18])(t)
-	a += t
+	t = translate([-56,0,-18])(t)
+	b = m.offset_block()
+	a += t + b
 	a = rotate(a = 25, v = (0,1,0))(a)
 	a = translate([0,0,-4])(a)
 	a = m.bisect_floor(a)
